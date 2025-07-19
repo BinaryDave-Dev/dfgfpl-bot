@@ -1,8 +1,6 @@
 import requests
 from collections import defaultdict
 
-# test sync
-
 BOT_TOKEN = "7866601514:AAEsJRyRnfPV_IKgjMIHrUbaKGxcIGLS35g"
 CHAT_ID = "7529074378"
 
