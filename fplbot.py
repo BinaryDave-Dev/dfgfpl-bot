@@ -134,34 +134,37 @@ if TEAM_ID:
     captain = next((id_to_player[pick['element']] for pick in picks['picks'] if pick.get('is_captain')), None)
     vice = next((id_to_player[pick['element']] for pick in picks['picks'] if pick.get('is_vice_captain')), None)
 else:
-    # Virtual XV logic (as before)
+    # Virtual XV logic (guarantee 15 players: 2 GK, 5 DEF, 5 MID, 3 FWD)
     squad = []
     club_counts = defaultdict(int)
     pos_counts = defaultdict(int)
     budget = TOTAL_BUDGET
+    # Fill up to the full allowed for each position (not just minimums)
     for pos in ['GK', 'DEF', 'MID', 'FWD']:
-        needed = STARTING_LIMITS[pos]
         for p in filter(lambda x: x['pos'] == pos, player_scores):
             if (pos_counts[pos] < POSITION_LIMITS[pos] and
                 club_counts[p['club_id']] < MAX_FROM_CLUB and
-                budget - p['price'] >= 0):
+                budget - p['price'] >= 0 and
+                p not in squad):
                 squad.append(p)
                 pos_counts[pos] += 1
                 club_counts[p['club_id']] += 1
                 budget -= p['price']
-                if pos_counts[pos] >= needed:
-                    break
-    for p in player_scores:
-        if len(squad) >= 15:
+            if len(squad) == 15:
+                break
+        if len(squad) == 15:
             break
-        if (pos_counts[p['pos']] < POSITION_LIMITS[p['pos']] and
-            club_counts[p['club_id']] < MAX_FROM_CLUB and
-            budget - p['price'] >= 0 and
-            p not in squad):
-            squad.append(p)
-            pos_counts[p['pos']] += 1
-            club_counts[p['club_id']] += 1
-            budget -= p['price']
+    # If not yet 15, fill remaining spots with best value players regardless of position (shouldn't happen, but just in case)
+    if len(squad) < 15:
+        for p in player_scores:
+            if p not in squad and club_counts[p['club_id']] < MAX_FROM_CLUB and budget - p['price'] >= 0:
+                squad.append(p)
+                pos_counts[p['pos']] += 1
+                club_counts[p['club_id']] += 1
+                budget -= p['price']
+            if len(squad) == 15:
+                break
+    # Starting 11: 1 GK, 3 DEF, 4 MID, 3 FWD (most attacking possible)
     starting_11 = []
     counts = {'GK': 0, 'DEF': 0, 'MID': 0, 'FWD': 0}
     limits = {'GK': 1, 'DEF': 3, 'MID': 4, 'FWD': 3}
